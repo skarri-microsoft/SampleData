@@ -1,1 +1,0 @@
-{ "boostRUs": 0, "replication": "OneTime",  "throttling": {   "minFreeCpu": 25,    "minFreeMemoryMb": 1024,    "maxParallelism": 2  },  "databases": {  "database_name": {   "targetRUs": 0,  "collections": {  "collection_name_1": {   "canDelete": true,    "shardKey": null,   "targetRUs": null  }  } } } }
