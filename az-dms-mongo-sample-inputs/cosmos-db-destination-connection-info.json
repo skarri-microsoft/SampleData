@@ -1,0 +1,1 @@
+{"userName": "username","password":"password","connectionString":"mongodb://username:password@username.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000"}
