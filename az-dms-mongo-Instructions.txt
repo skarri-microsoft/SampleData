@@ -1,0 +1,75 @@
+#A bash script for Cosmos DB Mongo migration using DMS service-name
+#Note:you can copy and paste along with comments
+#Please login to https://shell.azure.com/ and select the subscription
+#to run the following commands
+#please note that DMS extension is in preview and required to run these commands
+#Run the following command to install DMS Mongo Preview extension
+az extension add --name dms-preview
+
+#Pre requisites: Resource group, vent with default subnet mask, subid and region
+#Commands for the above is not covered here.
+rg="your-dms-mongo-rg"
+vnet="your-dms-mongo-vnet"
+region="westus"
+subid="your-subid"
+subnet="/subscriptions/${subid}/resourceGroups/${rg}/providers/Microsoft.Network/virtualNetworks/${vnet}/subnets/default"
+
+#sku for DMS service. For full list please run this command: az dms list-skus
+#note all skus are supported
+skuname="Premium_4vCores"
+
+#dms service name and project name
+dmsservicename="your-dms-test-service"
+dmsproject="your-dms-mongodb"
+
+#Creates a DMS service if it doesn't exit
+az dms create -l $region -n $dmsservicename -g $rg --sku-name $skuname --subnet $subnet
+
+#Mongo DMS platform variable
+platform="mongodb"
+
+#For mongo DMS it requires 3 inputs database options, source info and target info
+
+#For samples please refer to this location: #https://github.com/skarri-microsoft/SampleData/tree/master/az-dms-mongo-sample-inputs
+
+#Note: These files can be used as is after updating with your credentials
+
+#For more info: az dms project task create -h
+
+#Please note that in database-options.json the database name(s) and collection name(s) refers to
+#the native mongo source.
+
+#please upload the above sample files to the cloud shell file share
+#(click icon located right next to gear icon top left corner)
+filesDir="/home/yours"
+
+#Below names are based on the above sample files, please update it if your file names are different
+dbOptionsFileName="database-options.json"
+nativeMongoSourceConnectionFileName="native-mongo-source-connection-info.json"
+cosmosDbDestinationConnectionFileName="cosmos-db-destination-connection-info.json"
+
+#Taskid is just for convenience if you want to try multiple times.
+taskId="127"
+
+#Task names: one for validation and other for actual run
+dmsprojectvalidationtaskValidation="offlineMigrationtaskV${taskId}"
+dmsprojectvalidationtaskRun="offlineMigrationtaskR${taskId}"
+
+#Create a DMS mongo project
+az dms project create -l $region -g $rg --service-name $dmsservicename --source-platform $platform --target-platform $platform -n $dmsproject
+
+# Create a DMS mongo project validation task
+az dms project task create -g $rg --service-name $dmsservicename --project-name $dmsproject -n $dmsprojectvalidationtaskValidation --database-options "${filesDir}/${dbOptionsFileName}" --source-connection-json "${filesDir}/${nativeMongoSourceConnectionFileName}" --target-connection-json "${filesDir}/${cosmosDbDestinationConnectionFileName}" --task-type OfflineMigration --validate-only
+
+# Shows the output of DMS mongo project validation task
+az dms project task show -g $rg --service-name $dmsservicename --project-name $dmsproject -n $dmsprojectvalidationtaskValidation --expand output
+
+# Create a DMS mongo project task to run the migration
+az dms project task create -g $rg --service-name $dmsservicename --project-name $dmsproject -n $dmsprojectvalidationtaskRun --database-options "${filesDir}/${dbOptionsFileName}" --source-connection-json "${filesDir}/${nativeMongoSourceConnectionFileName}" --target-connection-json "${filesDir}/${cosmosDbDestinationConnectionFileName}" --task-type OfflineMigration --validated-task-name $dmsprojectvalidationtaskValidation
+
+# Shows the output of DMS mongo project migration task output
+az dms project task show -g $rg --service-name $dmsservicename --project-name $dmsproject -n $dmsprojectvalidationtaskRun --expand output
+
+
+
+
